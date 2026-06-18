@@ -23,9 +23,9 @@ using var host = builder.Build();
 // 2. Resolve the repository from our Container
 var repository = host.Services.GetRequiredService<IStudentRepository>();
 
-RunMenuLoop(repository);
+await RunMenuLoop(repository);
 
-static void RunMenuLoop(IStudentRepository repo)
+static async Task RunMenuLoop(IStudentRepository repo)
 {
     bool exit = false;
     while (!exit)
@@ -40,9 +40,10 @@ static void RunMenuLoop(IStudentRepository repo)
         Console.WriteLine("4. Delete Student");
         Console.WriteLine("5. Search Students");
         Console.WriteLine("6. Run LINQ Analytics Engine ");
-        Console.WriteLine("7. Exit");
+        Console.WriteLine("7. Synchronize External API Data Async ");
+        Console.WriteLine("8. Exit");
         Console.WriteLine("=========================================");
-        Console.Write("Select an option (1-7): ");
+        Console.Write("Select an option (1-8): ");
 
         string choice = Console.ReadLine() ?? "";
         Console.WriteLine();
@@ -57,7 +58,8 @@ static void RunMenuLoop(IStudentRepository repo)
                 case "4": HandleDelete(repo); break;
                 case "5": HandleSearch(repo); break;
                 case "6": HandleAnalytics(repo); break;
-                case "7": exit = true; break;
+                case "7": await HandleApiIntegrationAsync(repo); break;
+                case "8": exit = true; break;
                 default:
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Invalid option selection. Press any key to retry...");
@@ -258,6 +260,71 @@ static void HandleAnalytics(IStudentRepository repo)
         }
     }
     Console.WriteLine("=================================================================");
+    Console.WriteLine("\nPress any key to jump back to main configuration window...");
+    Console.ReadKey();
+}
+
+static async Task HandleApiIntegrationAsync(IStudentRepository repo)
+{
+    Console.Clear();
+    Console.WriteLine("=================================================================");
+    Console.WriteLine("               ASYNC MULTI-THREADED API INTEGRATION              ");
+    Console.WriteLine("=================================================================");
+
+    var students = repo.GetAll().ToList();
+    if (!students.Any())
+    {
+        Console.WriteLine("No student profiles exist in the system to enrich. Create some first!");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.WriteLine($"Initiating concurrent operations for {students.Count} profile records...");
+    var apiService = new Infrastructure.Data.ExternalApiService();
+    
+    // Setup a structural 5-second maximum safety timeout boundary
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+    var totalSystemWatch = System.Diagnostics.Stopwatch.StartNew();
+
+    try
+    {
+        // Allocate individual asynchronous data fetching tasks
+        var tasks = students.Select(async student =>
+        {
+            string externalInsight = await apiService.FetchExternalDataAsync(student.Id, cts.Token);
+            student.ExternalData = externalInsight;
+            repo.Update(student); // Commit changes back to JSON automatically
+        });
+
+        // Execute all running worker tasks concurrently in parallel channels
+        await Task.WhenAll(tasks);
+
+        totalSystemWatch.Stop();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\n=================================================================");
+        Console.WriteLine($"[SUCCESS] Distributed sync completed in: {totalSystemWatch.ElapsedMilliseconds} ms!");
+        Console.WriteLine("=================================================================");
+        Console.ResetColor();
+
+        // Print final enriched values
+        Console.WriteLine("\nUpdated Profile Records View:");
+        foreach (var s in repo.GetAll())
+        {
+            Console.WriteLine($" -> ID: {s.Id} | Name: {s.Name} | Info: {s.ExternalData}");
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("\n[TIMEOUT] System processing threshold breached! The execution pool was cancelled.");
+        Console.ResetColor();
+    }
+    finally
+    {
+        totalSystemWatch.Stop();
+    }
+
     Console.WriteLine("\nPress any key to jump back to main configuration window...");
     Console.ReadKey();
 }
