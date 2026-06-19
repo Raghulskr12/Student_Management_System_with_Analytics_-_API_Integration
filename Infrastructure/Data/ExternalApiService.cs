@@ -6,14 +6,17 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Data
 {
+    // C# 9+ Record type to cleanly model the incoming API JSON format
+    public record DummyJsonQuoteResponse(int id, string quote, string author);
+
     public class ExternalApiService
     {
         private static readonly HttpClient _httpClient = new();
 
         public async Task<string> FetchExternalDataAsync(int studentId, CancellationToken cancellationToken)
         {
-            // Using JSONPlaceholder API to fetch placeholder post titles as external data strings
-            string url = $"https://jsonplaceholder.typicode.com/posts/{((studentId - 1) % 100) + 1}";
+            // Endpoint for retrieving a completely random quote
+            string url = "https://dummyjson.com/quotes/random";
             int maxRetries = 3;
             int delayMilliseconds = 1000;
 
@@ -21,7 +24,6 @@ namespace Infrastructure.Data
             {
                 try
                 {
-                    // Throws an exception if the cancellation token timeout has triggered
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var startTime = DateTime.Now;
@@ -29,17 +31,25 @@ namespace Infrastructure.Data
                     response.EnsureSuccessStatusCode();
 
                     string jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
-                    using JsonDocument doc = JsonDocument.Parse(jsonString);
-                    string title = doc.RootElement.GetProperty("title").GetString() ?? "No Data";
+                    
+                    // Strong type parsing using System.Text.Json with Case-Insensitive option matching
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var quoteData = JsonSerializer.Deserialize<DummyJsonQuoteResponse>(jsonString, options);
 
                     var duration = DateTime.Now - startTime;
                     Console.WriteLine($"[BATCH] Student ID {studentId}: Fetch finished in {duration.TotalMilliseconds:F0}ms (Try #{retry})");
                     
-                    return title;
+                    // Formats the response into a single descriptive string for the profile
+                    if (quoteData != null)
+                    {
+                        return $"\"{quoteData.quote}\" — {quoteData.author}";
+                    }
+                    
+                    return "No Data";
                 }
                 catch (OperationCanceledException)
                 {
-                    throw; // Bubble up timeout cancellations directly
+                    throw; 
                 }
                 catch (Exception ex)
                 {
@@ -49,10 +59,9 @@ namespace Infrastructure.Data
 
                     if (retry == maxRetries)
                     {
-                        return $"Failed to load external insights after {maxRetries} attempts.";
+                        return $"Failed to load quote insights after {maxRetries} attempts.";
                     }
 
-                    // Linear backoff delay before trying again
                     await Task.Delay(delayMilliseconds * retry, cancellationToken);
                 }
             }

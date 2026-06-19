@@ -58,6 +58,7 @@ namespace Infrastructure.Data
             var target = students.FirstOrDefault(s => s.Id == student.Id) ?? throw new KeyNotFoundException();
             target.Name = student.Name;
             target.Grade = student.Grade;
+            target.ExternalData = student.ExternalData;
             SaveAll(students);
         }
 
