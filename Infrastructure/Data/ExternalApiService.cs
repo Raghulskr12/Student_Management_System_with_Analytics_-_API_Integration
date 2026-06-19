@@ -3,20 +3,26 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace Infrastructure.Data
 {
-    // C# 9+ Record type to cleanly model the incoming API JSON format
     public record DummyJsonQuoteResponse(int id, string quote, string author);
 
     public class ExternalApiService
     {
         private static readonly HttpClient _httpClient = new();
+        private readonly string _baseUrl;
+
+        public ExternalApiService(IConfiguration configuration)
+        {
+            // Dynamically fetch config value
+            _baseUrl = configuration["ApiSettings:BaseUrl"] ?? throw new ArgumentNullException("BaseUrl configuration is missing.");
+        }
 
         public async Task<string> FetchExternalDataAsync(int studentId, CancellationToken cancellationToken)
         {
-            // Endpoint for retrieving a completely random quote
-            string url = "https://dummyjson.com/quotes/random";
             int maxRetries = 3;
             int delayMilliseconds = 1000;
 
@@ -27,35 +33,34 @@ namespace Infrastructure.Data
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var startTime = DateTime.Now;
-                    HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
+                    HttpResponseMessage response = await _httpClient.GetAsync(_baseUrl, cancellationToken);
                     response.EnsureSuccessStatusCode();
 
                     string jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
                     
-                    // Strong type parsing using System.Text.Json with Case-Insensitive option matching
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     var quoteData = JsonSerializer.Deserialize<DummyJsonQuoteResponse>(jsonString, options);
 
                     var duration = DateTime.Now - startTime;
-                    Console.WriteLine($"[BATCH] Student ID {studentId}: Fetch finished in {duration.TotalMilliseconds:F0}ms (Try #{retry})");
                     
-                    // Formats the response into a single descriptive string for the profile
+                    // Production Logging (Info)
+                    Log.Information("Student ID {StudentId}: Fetch finished in {Duration}ms (Try #{Retry})", studentId, duration.TotalMilliseconds, retry);
+                    
                     if (quoteData != null)
                     {
                         return $"\"{quoteData.quote}\" — {quoteData.author}";
                     }
-                    
                     return "No Data";
                 }
                 catch (OperationCanceledException)
                 {
+                    Log.Warning("Student ID {StudentId}: Operation timed out or canceled.", studentId);
                     throw; 
                 }
                 catch (Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"[WARN] Student ID {studentId}: Try #{retry} failed ({ex.Message}).");
-                    Console.ResetColor();
+                    // Production Logging (Error / Warning)
+                    Log.Error(ex, "Student ID {StudentId}: Try #{Retry} failed.", studentId, retry);
 
                     if (retry == maxRetries)
                     {

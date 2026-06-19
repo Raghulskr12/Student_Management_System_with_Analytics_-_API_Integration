@@ -1,8 +1,19 @@
 {
   "version": 2,
-  "dgSpecHash": "1E8zUN6SAts=",
+  "dgSpecHash": "WghGcpa0nUk=",
   "success": true,
   "projectFilePath": "D:\\.net\\Student_Management_System_with_Analytics_-_API_Integration\\WebApplication1\\WebApplication1.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Victus\\.nuget\\packages\\microsoft.extensions.dependencymodel\\10.0.0\\microsoft.extensions.dependencymodel.10.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog\\4.3.0\\serilog.4.3.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.aspnetcore\\10.0.0\\serilog.aspnetcore.10.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.extensions.hosting\\10.0.0\\serilog.extensions.hosting.10.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.extensions.logging\\10.0.0\\serilog.extensions.logging.10.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.formatting.compact\\3.0.0\\serilog.formatting.compact.3.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.settings.configuration\\10.0.0\\serilog.settings.configuration.10.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.sinks.console\\6.1.1\\serilog.sinks.console.6.1.1.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.sinks.debug\\3.0.0\\serilog.sinks.debug.3.0.0.nupkg.sha512",
+    "C:\\Users\\Victus\\.nuget\\packages\\serilog.sinks.file\\7.0.0\\serilog.sinks.file.7.0.0.nupkg.sha512"
+  ],
   "logs": []
 }
