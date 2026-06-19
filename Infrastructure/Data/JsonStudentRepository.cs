@@ -10,33 +10,33 @@ namespace Infrastructure.Data
 {
     public class JsonStudentRepository : IStudentRepository
     {
-        private readonly string _filePath;
-        private readonly object _fileLock = new();
+        private readonly string _FilePath;
+        private readonly object _FileLock = new();
 
         public JsonStudentRepository(string filePath)
         {
-            _filePath = string.IsNullOrWhiteSpace(filePath) ? "students.json" : filePath;
-            lock (_fileLock)
+            _FilePath = string.IsNullOrWhiteSpace(filePath) ? "students.json" : filePath;
+            lock (_FileLock)
             {
-                if (!File.Exists(_filePath)) File.WriteAllText(_filePath, "[]");
+                if (!File.Exists(_FilePath)) File.WriteAllText(_FilePath, "[]");
             }
         }
 
         private List<Student> LoadAll()
         {
-            lock (_fileLock)
+            lock (_FileLock)
             {
-                string json = File.ReadAllText(_filePath);
+                string json = File.ReadAllText(_FilePath);
                 return JsonSerializer.Deserialize<List<Student>>(json) ?? new List<Student>();
             }
         }
 
         private void SaveAll(List<Student> students)
         {
-            lock (_fileLock)
+            lock (_FileLock)
             {
                 string json = JsonSerializer.Serialize(students, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_filePath, json);
+                File.WriteAllText(_FilePath, json);
             }
         }
 

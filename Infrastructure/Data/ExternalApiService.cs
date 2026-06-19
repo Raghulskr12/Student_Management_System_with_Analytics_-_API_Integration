@@ -12,13 +12,13 @@ namespace Infrastructure.Data
 
     public class ExternalApiService
     {
-        private static readonly HttpClient _httpClient = new();
-        private readonly string _baseUrl;
+        private static readonly HttpClient _HttpClient = new();
+        private readonly string _BaseUrl;
 
         public ExternalApiService(IConfiguration configuration)
         {
             // Dynamically fetch config value
-            _baseUrl = configuration["ApiSettings:BaseUrl"] ?? throw new ArgumentNullException("BaseUrl configuration is missing.");
+            _BaseUrl = configuration["ApiSettings:BaseUrl"] ?? throw new ArgumentNullException("BaseUrl configuration is missing.");
         }
 
         public async Task<string> FetchExternalDataAsync(int studentId, CancellationToken cancellationToken)
@@ -33,7 +33,7 @@ namespace Infrastructure.Data
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var startTime = DateTime.Now;
-                    HttpResponseMessage response = await _httpClient.GetAsync(_baseUrl, cancellationToken);
+                    HttpResponseMessage response = await _HttpClient.GetAsync(_BaseUrl, cancellationToken);
                     response.EnsureSuccessStatusCode();
 
                     string jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
